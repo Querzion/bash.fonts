@@ -16,7 +16,7 @@ APPLICATION="fonts"
 BASE="bash.$APPLICATION"
 FILES="$BASE/files"
 # Font links
-FONT_FILE="$FILES/fonts.txt"
+FONT_FILE="$FILES/font_links.txt"
 # Critical font
 CRITICAL_FONT_NAME="JetBrains Mono"
 CRITICAL_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
