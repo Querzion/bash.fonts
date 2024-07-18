@@ -16,74 +16,64 @@ FONT_FILE="$FILES/fonts.txt"
 CRITICAL_FONT_NAME="JetBrains Mono"
 CRITICAL_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
 FONT_DIR="$HOME/.local/share/fonts"
-ERROR_LOG="$HOME/font_installation_errors.log"
 
-# Function to log errors
-log_error() {
-  echo "$(date +'%Y-%m-%d %H:%M:%S') - $1" >> "$ERROR_LOG"
-}
 
-# Counter for installed fonts
-installed_fonts_count=0
+# Flag to track if any fonts were installed
+fonts_installed=false
 
-# Function to install a single font
-install_font() {
-  local font_name="$1"
-  local font_url="$2"
-  local install_font=""
+# Function to install a font from a zip file
+install_font_from_zip() {
+    local zip_file="$1"
+    local font_name="$2"
 
-  echo -e "${CYAN} Do you want to install $font_name? (y/n)${NC}"
-  read install_font
+    echo -e "${CYAN}Installing font: ${font_name}${NC}"
 
-  if [[ $install_font =~ ^[yY]$ ]]; then
-    echo -e "${PURPLE} Installing $font_name...${NC}"
-    wget -q "$font_url" -O "/tmp/${font_name}.zip"
-
-    if [ $? -ne 0 ]; then
-      echo -e "${RED} Failed to download $font_name${NC}"
-      log_error "Failed to download $font_name from $font_url"
+    # Check if font is already installed
+    if fc-list | grep -q "$font_name"; then
+        echo -e "${GREEN}Font '${font_name}' is already installed.${NC}"
     else
-      echo -e "${GREEN} Successfully downloaded $font_name${NC}"
-      mkdir -p "$FONT_DIR"
-      unzip -q "/tmp/${font_name}.zip" -d "$FONT_DIR"
-
-      if [ $? -ne 0 ]; then
-        echo -e "${RED} Failed to extract $font_name${NC}"
-        log_error "Failed to extract $font_name from /tmp/${font_name}.zip"
-      else
-        echo -e "${GREEN} Successfully installed $font_name${NC}"
-        fc-cache -f -v "$FONT_DIR"
-        ((installed_fonts_count++))
-      fi
+        # Extract the font files
+        unzip -q "$zip_file" -d "$FONT_DIR"
+        echo -e "${GREEN}Font '${font_name}' installed.${NC}"
+        fonts_installed=true
     fi
-
-    rm -f "/tmp/${font_name}.zip"  # Clean up downloaded zip file
-  else
-    echo -e "${PURPLE} Skipping $font_name...${NC}"
-  fi
 }
 
-# Main installation function
-install_fonts_detailed() {
-  echo -e "${GREEN} Installing fonts...${NC}"
+# Read fonts from fonts.txt and install them
+while read -r line; do
+    font_name=$(echo "$line" | awk '{print $1}')
+    font_url=$(echo "$line" | awk '{print $2}')
 
-  while IFS= read -r line; do
-    if [[ ! "$line" =~ ^\s*# && ! "$line" =~ ^\s*$ ]]; then
-      font_name=$(echo "$line" | cut -d '"' -f 2)
-      font_url=$(echo "$line" | cut -d '"' -f 4)
-      install_font "$font_name" "$font_url"
-    fi
-  done < "$FONT_FILE"
+    # Download the zip file
+    zip_file="$FONT_DIR/$(basename "$font_url")"
+    wget -q --show-progress -O "$zip_file" "$font_url"
 
-  # Final message based on the number of fonts installed
-  if [[ $installed_fonts_count -eq 0 ]]; then
-    echo -e "${GREEN} No fonts installed!${NC}"
-  elif [[ $installed_fonts_count -eq 1 ]]; then
-    echo -e "${GREEN} The font was installed successfully!${NC}"
-  else
-    echo -e "${GREEN} Fonts installed successfully!${NC}"
-  fi
-}
+    # Install fonts from the zip file
+    install_font_from_zip "$zip_file" "$font_name"
 
-# Start installation process
-install_fonts_detailed
+    # Clean up downloaded zip file
+    rm "$zip_file"
+    
+    # Assume we only need to install one font
+    break
+done < "$FONT_FILE"
+
+# If no fonts were installed, install critical font
+if ! $fonts_installed; then
+    # Download critical font zip file
+    zip_file="$FONT_DIR/$(basename "$CRITICAL_FONT_URL")"
+    wget -q --show-progress -O "$zip_file" "$CRITICAL_FONT_URL"
+
+    # Install critical font from the zip file
+    install_font_from_zip "$zip_file" "$CRITICAL_FONT_NAME"
+
+    # Clean up downloaded zip file
+    rm "$zip_file"
+fi
+
+# Display completion message only if fonts were installed
+if $fonts_installed; then
+    echo -e "${CYAN}Font installation complete.${NC}"
+else
+    echo -e "${YELLOW}No new fonts installed.${NC}"
+fi
