@@ -24,39 +24,39 @@ FONT_DIR="$HOME/.local/share/fonts"
 ######################################################################################################### FONT INSTALLATION
 ################################ FONT INSTALLATION
 
-# Function to install fonts
+# Function to install a single font
+install_font() {
+    font_name=$1
+    download_url=$2
+    
+    echo -e "${PURPLE} Installing $font_name... ${NC}"
+    temp_dir=$(mktemp -d)
+    
+    # Download the font zip file
+    curl -L -o "$temp_dir/font.zip" "$download_url"
+    
+    # Unzip the font files
+    unzip -q "$temp_dir/font.zip" -d "$temp_dir"
+    
+    # Create font directory if not exists
+    mkdir -p "$FONT_DIR"
+    
+    # Move all font files to user fonts directory
+    find "$temp_dir" -name '*.otf' -or -name '*.ttf' -exec mv {} "$FONT_DIR" \;
+    
+    # Clean up
+    rm -rf "$temp_dir"
+    
+    echo -e "${CYAN} $font_name installed successfully! ${NC}"
+}
+
+# Function to install fonts from a specified file
 install_fonts() {
     fonts_file=$1
 
-    # Function to install a single font
-    install_font() {
-        font_name=$1
-        download_url=$2
-        
-        echo "Installing $font_name..."
-        temp_dir=$(mktemp -d)
-        
-        # Download the font zip file
-        curl -L -o "$temp_dir/font.zip" "$download_url"
-        
-        # Unzip the font files
-        unzip -q "$temp_dir/font.zip" -d "$temp_dir"
-        
-        # Create font directory if not exists
-        mkdir -p "$FONT_DIR"
-        
-        # Move all font files to user fonts directory
-        find "$temp_dir" -name '*.otf' -or -name '*.ttf' -exec mv {} "$FONT_DIR" \;
-        
-        # Clean up
-        rm -rf "$temp_dir"
-        
-        echo "$font_name installed successfully!"
-    }
-
     # Check if the fonts file exists
     if [ ! -f "$fonts_file" ]; then
-        echo "Error: Fonts file '$fonts_file' not found."
+        echo -e "${RED} Error: Fonts file '$fonts_file' not found. ${NC}"
         exit 1
     fi
 
@@ -79,12 +79,30 @@ install_fonts() {
     # Refresh font cache
     fc-cache -f -v
 
-    echo "All fonts installed and cache updated!"
+    echo -e "${GREEN} All fonts installed and cache updated!${NC}"
 }
 
+# Count the number of fonts in the FONT_FILE
+font_count=$(grep -vE '^\s*#|^\s*$' "$FONT_FILE" | wc -l)
 
-######################################################################################################### MAIN
-################################ MAIN
 
-# Call the function to install fonts using the predefined FONT_FILE path
-install_fonts "$FONT_FILE"
+######################################################################################################### MENU
+################################ MENU
+
+echo -e "${YELLOW} Choose an option:${NC}"
+echo -e "${PURPLE} 1) Install default font ${NC} ($CRITICAL_FONT_NAME)"
+echo -e "${PURPLE} 2) Install all $font_count fonts from $FONT_FILE ${NC}"
+read -p "Enter your choice: " choice
+
+case $choice in
+    1)
+        install_font "$CRITICAL_FONT_NAME" "$CRITICAL_FONT_URL"
+        ;;
+    2)
+        install_fonts "$FONT_FILE"
+        ;;
+    *)
+        echo -e "${RED}Invalid choice${NC}"
+        exit 1
+        ;;
+esac
