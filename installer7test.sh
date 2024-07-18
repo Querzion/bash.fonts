@@ -18,62 +18,63 @@ CRITICAL_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.
 FONT_DIR="$HOME/.local/share/fonts"
 
 
-# Flag to track if any fonts were installed
-fonts_installed=false
+# Function to install fonts
+install_fonts() {
+    fonts_file=$1
 
-# Function to install a font from a zip file
-install_font_from_zip() {
-    local zip_file="$1"
-    local font_name="$2"
+    # Function to install a single font
+    install_font() {
+        font_name=$1
+        download_url=$2
+        
+        echo "Installing $font_name..."
+        temp_dir=$(mktemp -d)
+        
+        # Download the font zip file
+        curl -L -o "$temp_dir/font.zip" "$download_url"
+        
+        # Unzip the font files
+        unzip -q "$temp_dir/font.zip" -d "$temp_dir"
+        
+        # Create font directory if not exists
+        mkdir -p "$FONT_DIR"
+        
+        # Move all font files to user fonts directory
+        find "$temp_dir" -name '*.otf' -or -name '*.ttf' -exec mv {} "$FONT_DIR" \;
+        
+        # Clean up
+        rm -rf "$temp_dir"
+        
+        echo "$font_name installed successfully!"
+    }
 
-    echo -e "${CYAN}Installing font: ${font_name}${NC}"
-
-    # Check if font is already installed
-    if fc-list | grep -q "$font_name"; then
-        echo -e "${GREEN}Font '${font_name}' is already installed.${NC}"
-    else
-        # Extract the font files
-        unzip -q "$zip_file" -d "$FONT_DIR"
-        echo -e "${GREEN}Font '${font_name}' installed.${NC}"
-        fonts_installed=true
+    # Check if the fonts file exists
+    if [ ! -f "$fonts_file" ]; then
+        echo "Error: Fonts file '$fonts_file' not found."
+        exit 1
     fi
+
+    # Read the font list from the specified file
+    while IFS= read -r line; do
+        # Skip comment lines and empty lines
+        if [[ $line =~ ^\s*# || ! $line ]]; then
+            continue
+        fi
+        
+        # Parse font name and download URL
+        font_name=$(echo "$line" | awk '{print $1}' | tr -d '"')
+        download_url=$(echo "$line" | awk '{print $2}' | tr -d '"')
+        
+        # Install the font
+        install_font "$font_name" "$download_url"
+        
+    done < "$fonts_file"
+
+    # Refresh font cache
+    fc-cache -f -v
+
+    echo "All fonts installed and cache updated!"
 }
 
-# Read fonts from fonts.txt and install them
-while read -r line; do
-    font_name=$(echo "$line" | awk '{print $1}')
-    font_url=$(echo "$line" | awk '{print $2}')
-
-    # Download the zip file
-    zip_file="$FONT_DIR/$(basename "$font_url")"
-    wget -q --show-progress -O "$zip_file" "$font_url"
-
-    # Install fonts from the zip file
-    install_font_from_zip "$zip_file" "$font_name"
-
-    # Clean up downloaded zip file
-    rm "$zip_file"
-    
-    # Assume we only need to install one font
-    break
-done < "$FONT_FILE"
-
-# If no fonts were installed, install critical font
-if ! $fonts_installed; then
-    # Download critical font zip file
-    zip_file="$FONT_DIR/$(basename "$CRITICAL_FONT_URL")"
-    wget -q --show-progress -O "$zip_file" "$CRITICAL_FONT_URL"
-
-    # Install critical font from the zip file
-    install_font_from_zip "$zip_file" "$CRITICAL_FONT_NAME"
-
-    # Clean up downloaded zip file
-    rm "$zip_file"
-fi
-
-# Display completion message only if fonts were installed
-if $fonts_installed; then
-    echo -e "${CYAN}Font installation complete.${NC}"
-else
-    echo -e "${YELLOW}No new fonts installed.${NC}"
-fi
+# Call the function to install fonts using the predefined FONT_FILE path
+install_fonts "$FONT_FILE"
