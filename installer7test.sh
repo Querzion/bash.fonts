@@ -82,5 +82,9 @@ install_fonts() {
     echo "All fonts installed and cache updated!"
 }
 
+
+######################################################################################################### MAIN
+################################ MAIN
+
 # Call the function to install fonts using the predefined FONT_FILE path
 install_fonts "$FONT_FILE"
