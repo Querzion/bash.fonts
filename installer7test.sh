@@ -29,7 +29,7 @@ install_font() {
     font_name=$1
     download_url=$2
     
-    echo -e "${PURPLE} Installing $font_name... ${NC}"
+    echo -e "${CYAN} Installing $font_name... ${NC}"
     temp_dir=$(mktemp -d)
     
     # Download the font zip file
@@ -47,7 +47,7 @@ install_font() {
     # Clean up
     rm -rf "$temp_dir"
     
-    echo -e "${CYAN} $font_name installed successfully! ${NC}"
+    echo -e "${PURPLE} $font_name installed successfully! ${NC}"
 }
 
 # Function to install fonts from a specified file
@@ -90,8 +90,8 @@ font_count=$(grep -vE '^\s*#|^\s*$' "$FONT_FILE" | wc -l)
 ################################ MENU
 
 echo -e "${YELLOW} Choose an option:${NC}"
-echo -e "${PURPLE} 1) Install default font ${NC} ($CRITICAL_FONT_NAME)"
-echo -e "${PURPLE} 2) Install all $font_count fonts from $FONT_FILE ${NC}"
+echo -e "${CYAN} 1) Install default font ${NC}($CRITICAL_FONT_NAME)"
+echo -e "${CYAN} 2) Install all $font_count fonts from $FONT_FILE ${NC}"
 read -p "Enter your choice: " choice
 
 case $choice in
