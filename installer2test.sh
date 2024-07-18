@@ -22,30 +22,44 @@ CRITICAL_FONT_NAME="JetBrains Mono"
 CRITICAL_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
 # Directory to install fonts
 FONT_DIR="$HOME/.local/share/fonts"
-
+# Define the error log file
+ERROR_LOG="$HOME/font_installation_errors.log"
 
 ######################################################################################################### FONT INSTALLATION
 ################################ FONT INSTALLATION
+
+# Function to log errors
+log_error() {
+  echo "$(date +'%Y-%m-%d %H:%M:%S') - $1" >> "$ERROR_LOG"
+}
 
 # Count the number of font packages
 font_count=$(grep -v '^#' "$FONT_FILE" | wc -l)
 
 # Function to handle all operations
-install_fonts_detailed() {
-  echo -e "${CYAN} Do you want to install fonts to your system? (y/n) ${NC}"
+install_fonts() {
+  echo -e "${CYAN}Do you want to install fonts to your system? (y/n) ${NC}"
   read install_fonts
   if [[ $install_fonts =~ ^[nN]$ ]]; then
-    echo -e "${PURPLE} Installing critical font: $CRITICAL_FONT_NAME${NC}"
+    echo -e "${PURPLE}Installing critical font: $CRITICAL_FONT_NAME${NC}"
     wget -q "$CRITICAL_FONT_URL" -O /tmp/font.zip
+    if [ $? -ne 0 ]; then
+      log_error "Failed to download critical font: $CRITICAL_FONT_NAME"
+      exit 1
+    fi
     mkdir -p "$FONT_DIR"
     unzip -qo /tmp/font.zip -d "$FONT_DIR"
+    if [ $? -ne 0 ]; then
+      log_error "Failed to unzip critical font: $CRITICAL_FONT_NAME"
+      exit 1
+    fi
     echo -e "Extracted files:"
     unzip -l /tmp/font.zip | awk '{print $2}' | tail -n +4 | head -n -2
     fc-cache -f -v
     exit 0
   fi
 
-  echo -e "${CYAN} Do you want to install all $font_count font packages? (y/n) ${NC}"
+  echo -e "${CYAN}Do you want to install all $font_count font packages? (y/n) ${NC}"
   read download_all
   if [[ $download_all =~ ^[yY]$ ]]; then
     while IFS= read -r line; do
@@ -53,14 +67,22 @@ install_fonts_detailed() {
       name=$(echo $line | awk '{for(i=1;i<NF;i++) printf $i " "; print $NF}')
       url=$(echo $line | awk '{print $NF}')
 
-      echo -e "${CYAN} Installing $name...${NC}"
+      echo -e "${CYAN}Installing $name...${NC}"
       wget -q "$url" -O /tmp/font.zip
+      if [ $? -ne 0 ]; then
+        log_error "Failed to download font: $name"
+        continue
+      fi
       mkdir -p "$FONT_DIR"
       unzip -qo /tmp/font.zip -d "$FONT_DIR"
+      if [ $? -ne 0 ]; then
+        log_error "Failed to unzip font: $name"
+        continue
+      fi
       echo -e "Extracted files:"
       unzip -l /tmp/font.zip | awk '{print $2}' | tail -n +4 | head -n -2
       fc-cache -f -v
-      echo -e "${GREEN} $name installed.${NC}"
+      echo -e "${GREEN}$name installed.${NC}"
     done < "$FONT_FILE"
   else
     while IFS= read -r line; do
@@ -68,30 +90,46 @@ install_fonts_detailed() {
       name=$(echo $line | awk '{for(i=1;i<NF;i++) printf $i " "; print $NF}')
       url=$(echo $line | awk '{print $NF}')
 
-      echo -e "${PURPLE} Do you want to install the $name font? (y/n) ${NC}"
+      echo -e "${PURPLE}Do you want to install the $name font? (y/n) ${NC}"
       read answer
       if [[ $answer =~ ^[yY]$ ]]; then
-        echo -e "${CYAN} Installing $name...${NC}"
+        echo -e "${CYAN}Installing $name...${NC}"
         wget -q "$url" -O /tmp/font.zip
+        if [ $? -ne 0 ]; then
+          log_error "Failed to download font: $name"
+          continue
+        fi
         mkdir -p "$FONT_DIR"
         unzip -qo /tmp/font.zip -d "$FONT_DIR"
+        if [ $? -ne 0 ]; then
+          log_error "Failed to unzip font: $name"
+          continue
+        fi
         echo -e "Extracted files:"
         unzip -l /tmp/font.zip | awk '{print $2}' | tail -n +4 | head -n -2
         fc-cache -f -v
-        echo -e "${GREEN} $name installed.${NC}"
+        echo -e "${GREEN}$name installed.${NC}"
       else
-        echo -e "${RED} Skipping $name.${NC}"
+        echo -e "${RED}Skipping $name.${NC}"
       fi
     done < "$FONT_FILE"
   fi
 
   # Ensure the critical font is installed
-  echo -e "${PURPLE} Ensuring the critical font is installed: $CRITICAL_FONT_NAME${NC}"
+  echo -e "${PURPLE}Ensuring the critical font is installed: $CRITICAL_FONT_NAME${NC}"
   wget -q "$CRITICAL_FONT_URL" -O /tmp/font.zip
-  unzip -qo /tmp/font.zip -d "$FONT_DIR"
-  echo -e "Extracted files:"
-  unzip -l /tmp/font.zip | awk '{print $2}' | tail -n +4 | head -n -2
-  fc-cache -f -v
+  if [ $? -ne 0 ]; then
+    log_error "Failed to download critical font: $CRITICAL_FONT_NAME"
+  else
+    unzip -qo /tmp/font.zip -d "$FONT_DIR"
+    if [ $? -ne 0 ]; then
+      log_error "Failed to unzip critical font: $CRITICAL_FONT_NAME"
+    else
+      echo -e "Extracted files:"
+      unzip -l /tmp/font.zip | awk '{print $2}' | tail -n +4 | head -n -2
+      fc-cache -f -v
+    fi
+  fi
 }
 
 
@@ -101,6 +139,6 @@ install_fonts_detailed() {
 echo -e "${GREEN} First lets get the NerdFonts! All of them? ALL OF THEM! ${NC}"
 echo -e "${YELLOW} Well, only if you want! Press something else then Y/y, and you will install the default critical font JetBrains Mono ${NC}"
 
-install_fonts_detailed
+install_fonts
 
 echo -e "${GREEN} Fonts installed successfully! ${NC}"
