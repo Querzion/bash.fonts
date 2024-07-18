@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 APPLICATION="fonts"
 BASE="bash.$APPLICATION"
 FILES="$BASE/files"
-FONT_FILE="$FILES/fonts.txt"
+FONT_FILE="$FILES/font_links.txt"
 FONT_DIR="$HOME/.local/share/fonts"
 
 # Critical font details
