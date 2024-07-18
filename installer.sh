@@ -29,7 +29,7 @@ FONT_DIR="$HOME/.local/share/fonts"
 
 # Function to handle all operations
 install_fonts() {
-  read -p "${CYAN}Do you want to download fonts? (y/n) ${NC}" download_fonts
+  read -p "${CYAN} Do you want to download fonts? (y/n) ${NC}" download_fonts
   if [[ $download_fonts =~ ^[nN]$ ]]; then
     echo -e "${PURPLE}Installing critical font: $CRITICAL_FONT_NAME${NC}"
     wget -q "$CRITICAL_FONT_URL" -O /tmp/font.zip
@@ -39,7 +39,7 @@ install_fonts() {
     exit 0
   fi
 
-  read -p "${CYAN}Do you want to download all fonts? (y/n) ${NC}" download_all
+  read -p "${CYAN} Do you want to download all fonts? (y/n) ${NC}" download_all
   while IFS= read -r line; do
     [[ $line =~ ^#.*$ ]] && continue
     # This part handles the spaces between the name and the link. 
