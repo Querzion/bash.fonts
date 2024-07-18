@@ -21,6 +21,9 @@ CRITICAL_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.
 FONT_DIR="$HOME/.local/share/fonts"
 
 
+######################################################################################################### FONT INSTALLATION
+################################ FONT INSTALLATION
+
 # Function to install fonts
 install_fonts() {
     fonts_file=$1
