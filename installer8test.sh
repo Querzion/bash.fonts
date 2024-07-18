@@ -8,7 +8,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-
 ######################################################################################################### FILE & FOLDER PATHS
 ################################ FILE & FOLDER PATHS
 
@@ -26,12 +25,11 @@ CRITICAL_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.
 ######################################################################################################### FONT INSTALLATION
 ################################ FONT INSTALLATION
 
-# Function to install a single font
 install_font() {
     font_name=$1
     download_url=$2
     
-    echo -e "${CYAN} Installing $font_name... ${NC}"
+    echo -e "${CYAN}Installing $font_name...${NC}"
     temp_dir=$(mktemp -d)
     
     # Download the font zip file
@@ -49,7 +47,7 @@ install_font() {
     # Clean up
     rm -rf "$temp_dir"
     
-    echo -e "${PURPLE} $font_name installed successfully! ${NC}"
+    echo -e "${GREEN}$font_name installed successfully!${NC}"
 }
 
 # Function to install fonts from a specified file
@@ -58,7 +56,7 @@ install_fonts() {
 
     # Check if the fonts file exists
     if [ ! -f "$fonts_file" ]; then
-        echo -e "${RED} Error: Fonts file '$fonts_file' not found. ${NC}"
+        echo -e "${RED}Error: Fonts file '$fonts_file' not found.${NC}"
         exit 1
     fi
 
@@ -81,19 +79,64 @@ install_fonts() {
     # Refresh font cache
     fc-cache -f -v
 
-    echo -e "${GREEN} All fonts installed and cache updated!${NC}"
+    echo -e "${GREEN}All fonts installed and cache updated!${NC}"
 }
 
-# Count the number of fonts in the FONT_FILE
-font_count=$(grep -vE '^\s*#|^\s*$' "$FONT_FILE" | wc -l)
+# Function to display and install a single font from the list
+install_single_font() {
+    fonts_file=$1
+
+    # Check if the fonts file exists
+    if [ ! -f "$fonts_file" ]; then
+        echo -e "${RED}Error: Fonts file '$fonts_file' not found.${NC}"
+        exit 1
+    fi
+
+    # Display font list with numbers
+    echo -e "${YELLOW}Available fonts:${NC}"
+    font_list=()
+    i=1
+    while IFS= read -r line; do
+        # Skip comment lines and empty lines
+        if [[ $line =~ ^\s*# || ! $line ]]; then
+            continue
+        fi
+        
+        # Parse font name and download URL
+        font_name=$(echo "$line" | awk '{print $1}' | tr -d '"')
+        download_url=$(echo "$line" | awk '{print $2}' | tr -d '"')
+        
+        # Add to font list and display
+        font_list+=("$font_name $download_url")
+        echo -e "${PURPLE}$i) $font_name${NC}"
+        ((i++))
+        
+    done < "$fonts_file"
+
+    # Prompt user to choose a font
+    read -p "Enter the number of the font to install: " font_choice
+
+    # Validate choice
+    if ! [[ "$font_choice" =~ ^[0-9]+$ ]] || [ "$font_choice" -lt 1 ] || [ "$font_choice" -gt "${#font_list[@]}" ]; then
+        echo -e "${RED}Invalid choice${NC}"
+        exit 1
+    fi
+
+    # Install the chosen font
+    chosen_font="${font_list[$((font_choice-1))]}"
+    chosen_font_name=$(echo "$chosen_font" | awk '{print $1}')
+    chosen_font_url=$(echo "$chosen_font" | awk '{print $2}')
+    install_font "$chosen_font_name" "$chosen_font_url"
+}
 
 
 ######################################################################################################### MENU
 ################################ MENU
 
-echo -e "${YELLOW} Choose an option:${NC}"
-echo -e "${CYAN} 1) Install default font ${NC}($CRITICAL_FONT_NAME)"
-echo -e "${CYAN} 2) Install all $font_count fonts from $FONT_FILE ${NC}"
+echo -e "${YELLOW}Choose an option:${NC}"
+echo -e "${PURPLE}1) Install critical font ($CRITICAL_FONT_NAME)${NC}"
+echo -e "${PURPLE}2) Install all fonts from $FONT_FILE${NC}"
+echo -e "${PURPLE}3) Install a single font from the list${NC}"
 read -p "Enter your choice: " choice
 
 case $choice in
@@ -102,6 +145,9 @@ case $choice in
         ;;
     2)
         install_fonts "$FONT_FILE"
+        ;;
+    3)
+        install_single_font "$FONT_FILE"
         ;;
     *)
         echo -e "${RED}Invalid choice${NC}"
