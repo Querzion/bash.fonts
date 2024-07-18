@@ -26,8 +26,6 @@ CRITICAL_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.
 ######################################################################################################### FONT INSTALLATION
 ################################ FONT INSTALLATION
 
-
-
 # Function to install a single font
 install_font() {
     font_name=$1
